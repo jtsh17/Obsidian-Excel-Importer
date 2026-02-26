@@ -1,14 +1,13 @@
-# XLSX Cells — Obsidian Plugin
+# XLSX Cells v2 — Obsidian Plugin
 
-Renders live Excel cell values (and ranges) directly inside Obsidian notes.
-The values refresh automatically whenever the source `.xlsx` file is modified.
+Renders live Excel cell values and ranges directly inside Obsidian notes via fenced code blocks and inline backtick spans. Values refresh automatically whenever the source `.xlsx` file is modified.
 
 ---
 
 ## Quick-start
 
 1. Place your `.xlsx` file anywhere inside the vault.
-2. In your note's frontmatter, declare the defaults:
+2. *(Optional)* Set note-level defaults in frontmatter:
 
 ```yaml
 ---
@@ -17,77 +16,140 @@ excel_sheet: Sheet1
 ---
 ```
 
-3. Anywhere in the note body, write a call expression (see below).
+3. Use a fenced code block or inline span (see below).
 
 ---
 
-## Call Reference
+## Fenced Code Blocks
 
-### `=excel(...)` — single cell
+Use a fenced ` ```excel ``` ` block to embed a cell value or a table range.
 
-Returns the value of one cell, rendered inline as a `<span>`.
+~~~markdown
+```excel
+file:   _external/Budget.xlsx
+sheet:  January
+cell:   C5
+format: %.2f
+```
+~~~
 
-| Signature | Example |
-|-----------|---------|
-| `=excel(col, row)` | `=excel(C, 5)` |
-| `=excel(col, row, fmt)` | `=excel(C, 5, %.2f)` |
-| `=excel("file", col, row)` | `=excel("Budget.xlsx", C, 5)` |
-| `=excel("file", col, row, fmt)` | `=excel("Budget.xlsx", C, 5, %.2f)` |
-| `=excel("file", "sheet", col, row)` | `=excel("Budget.xlsx", "Jan", C, 5)` |
-| `=excel("file", "sheet", col, row, fmt)` | `=excel("Budget.xlsx", "Jan", C, 5, %.2f)` |
+### Keys
 
-- Argument order is **col, row** — matching Excel's natural A1 notation (column letter first).
-- **col** accepts a column letter (`A`, `G`, `AA` …) or a plain 1-based integer.
-- **row** accepts a row number or a letter (treated as the same letter-to-int conversion).
-- `R1`/`C1` style tokens are accepted for numeric refs (`R27`, `C2`).
-- Use either commas or semicolons as argument separators.
-- `"file"` can be a vault-relative path **or** a configured alias (see *Aliases* below).
-- `"sheet"` is the sheet tab name.
-- When `"file"` and/or `"sheet"` are omitted the note's frontmatter defaults
-  (`excel_file`, `excel_sheet`) are used, falling back to the hard-coded
-  `fallbackFile` / `fallbackSheet` values in `main.ts`.
+| Key | Required | Description |
+|-----|----------|-------------|
+| `file` | No | Vault-relative path to the `.xlsx` file. Falls back to note frontmatter → plugin settings. |
+| `sheet` | No | Sheet tab name. Falls back to note frontmatter → plugin settings. |
+| `cell` | Yes* | A1-style cell reference, e.g. `C5`. Mutually exclusive with `range`. |
+| `range` | Yes* | A1:A1 range, e.g. `A1:E11`. Mutually exclusive with `cell`. |
+| `headers` | No | `true`, `false`, or `auto` (default). Controls whether the first row renders as `<th>` header cells. |
+| `format` | No | printf-style format string, e.g. `%.2f`. See *Format Strings* below. |
+
+*Exactly one of `cell` or `range` must be provided.
+
+Lines starting with `#` are treated as comments and are ignored.
+
+### Examples
+
+Single cell:
+
+~~~markdown
+```excel
+cell: B3
+```
+~~~
+
+Range with headers auto-detected:
+
+~~~markdown
+```excel
+file:  _external/Sales.xlsx
+sheet: Q1
+range: A1:D10
+```
+~~~
+
+Range with explicit headers and formatting:
+
+~~~markdown
+```excel
+range:   A1:F20
+headers: true
+format:  %,.2f
+```
+~~~
 
 ---
 
-### `=exceltable(...)` — cell range as a table
+## Inline Spans
 
-Renders a rectangular cell range as an HTML `<table>` inside a
-`<div class="excel-table-wrapper">`.
+Use a backtick span starting with `xl:` to embed a value inline within a sentence.
 
-| Signature                                           | Example                                              |
-| --------------------------------------------------- | ---------------------------------------------------- |
-| `=exceltable(c1, r1, c2, r2)`                       | 'exceltable(A, 1, D, 5)'                             |
-| `=exceltable(c1, r1, c2, r2, fmt)`                  | 'exceltable(A, 1, D, 5, %.2f)'                       |
-| `=exceltable(c1, r1, c2, r2, h)`                    | 'exceltable(A, 1, D, 5, h)'                          |
-| `=exceltable(c1, r1, c2, r2, hfmt)`                 | `exceltable(A, 1, D, 5, h%.2f)`                      |
-| `=exceltable("file", c1, r1, c2, r2)`               | `exceltable("Budget.xlsx", A, 1, D, 5)`              |
-| `=exceltable("file", "sheet", c1, r1, c2, r2)`      | `exceltable("Budget.xlsx", "Jan", A, 1, D, 5)`       |
-| `=exceltable("file", "sheet", c1, r1, c2, r2, fmt)` | `exceltable("Budget.xlsx", "Jan", A, 1, D, 5, %.2f)` |
+```markdown
+Revenue this quarter: `xl:Sheet1:B5:%.2f`
+```
 
-- Argument order is **col, row** per corner — matching Excel's A1 notation.
-  `=exceltable(A, 38, G, 44)` selects the same range as `A38:G44` in Excel.
-- **col** and **row** each accept a column letter (`A`, `G`, `AA` …) or a plain integer.
-- `R1`/`C1` style tokens are accepted for numeric refs (`R27`, `C2`).
-- Reversed corners (c1 > c2 or r1 > r2) are normalised automatically.
-- Use either commas or semicolons as argument separators.
-- The optional **`h` prefix** on the format string makes the first row render
-  as `<th>` header cells.  `h` alone = header row only; `h%.2f` = header + formatting.
-- Format strings do **not** need quotes: `h%.2f` and `"h%.2f"` are both accepted.
-- Best placed on its own paragraph line; the wrapper `<div>` is a block element.
+### Syntax
+
+All parts are separated by colons. The parser reads from right to left:
+
+| Pattern | Description |
+|---------|-------------|
+| `` `xl:C5` `` | Single cell, all defaults |
+| `` `xl:C5:%.2f` `` | Single cell with format |
+| `` `xl:Sheet1:C5` `` | Cell on explicit sheet |
+| `` `xl:Budget.xlsx:Sheet1:C5` `` | Fully specified cell |
+| `` `xl:A1:D5` `` | Range, all defaults |
+| `` `xl:Sheet1:A1:D5` `` | Range on explicit sheet |
+| `` `xl:Budget.xlsx:Sheet1:A1:D5:%.2f` `` | Fully specified range with format |
+
+**Parsing rules:**
+- If the last part starts with `%` it is extracted as the format string.
+- If the last two parts are both valid A1 references (e.g. `A1` and `D5`), a range is created.
+- If only the last part is a valid A1 reference, it is a single cell.
+- Remaining left parts: none → use defaults; one part → sheet; two parts → file + sheet.
+
+---
+
+## Defaults Cascade
+
+File and sheet are resolved through a three-level cascade:
+
+```
+block / inline key  →  note frontmatter  →  plugin settings
+```
+
+1. **Block/inline key** — `file:` / `sheet:` specified directly in the code block or `xl:` reference.
+2. **Note frontmatter** — `excel_file` and `excel_sheet` YAML keys at the top of the note.
+3. **Plugin settings** — *Default file* and *Default sheet* configured in Obsidian's Settings UI.
+
+---
+
+## Plugin Settings
+
+Navigate to **Settings → Community Plugins → XLSX Cells v2** to configure:
+
+| Setting | Description |
+|---------|-------------|
+| Default file | Vault-relative path to the fallback `.xlsx` file (e.g. `_external/Budget.xlsx`). |
+| Default sheet | Fallback sheet tab name (e.g. `Sheet1`). |
+
+Settings are persisted to `.obsidian/plugins/xlsx-cells-v2/data.json` via Obsidian's standard `loadData()` / `saveData()` API.
+
+---
+
+## Auto-refresh
+
+When an `.xlsx` file inside the vault is modified:
+
+1. The plugin debounces 500ms to absorb rapid saves from Excel and other applications.
+2. The cached workbook for that file is invalidated.
+3. Only the notes that reference the changed file are re-rendered — not every open note.
 
 ---
 
 ## Format String Reference
 
-The optional format argument uses **C printf-style** syntax.
-Quotes are **optional** — both forms are accepted:
-
-```
-=excel(C, 5, %.2f)       ← unquoted (recommended)
-=excel(C, 5, "%.2f")     ← quoted   (also fine)
-```
-
-Format syntax:
+The optional `format` key / suffix uses **C printf-style** syntax.
 
 ```
 %[flags][.precision]specifier
@@ -109,76 +171,64 @@ Format syntax:
 
 ### Specifiers
 
-| Specifier | Description | Example input | `"%.2f"` output |
-|-----------|-------------|---------------|-----------------|
+| Specifier | Description | Example input | `%.2f` output |
+|-----------|-------------|---------------|----------------|
 | `f` | Fixed-point decimal | `3.14159` | `3.14` |
 | `e` | Scientific notation | `314159` | `3.14e+5` |
-| `g` | Shortest of `f` / `e` | `0.000314` | `0.00` (`.2g` → `3.1e-4`) |
+| `g` | Shortest of `f` / `e` | `0.000314` | `3.1e-4` |
 | `d` / `i` | Integer (rounded) | `3.7` | `4` |
-| `s` | String pass-through (no-op) | `"hello"` | `hello` |
+| `s` | String pass-through (no-op) | `hello` | `hello` |
 
-**Non-numeric cell values always pass through unchanged**, regardless of specifier.
+Non-numeric cell values always pass through unchanged, regardless of specifier.
 
 ### Quick examples
 
 | Format string | Input | Output |
 |---------------|-------|--------|
-| `"%.2f"` | `3.14159` | `3.14` |
-| `"%.0f"` | `3.7` | `4` |
-| `"%,.2f"` | `12345.6` | `12,345.60` |
-| `"%+.2f"` | `3.14` | `+3.14` |
-| `"%+,.0f"` | `12345` | `+12,345` |
-| `"%.4e"` | `314159` | `3.1416e+5` |
-| `"%.3g"` | `3.14159` | `3.14` |
-| `"%d"` | `3.9` | `4` |
+| `%.2f` | `3.14159` | `3.14` |
+| `%.0f` | `3.7` | `4` |
+| `%,.2f` | `12345.6` | `12,345.60` |
+| `%+.2f` | `3.14` | `+3.14` |
+| `%+,.0f` | `12345` | `+12,345` |
+| `%.4e` | `314159` | `3.1416e+5` |
+| `%.3g` | `3.14159` | `3.14` |
+| `%d` | `3.9` | `4` |
 
 ---
 
-## Note-level Defaults (Frontmatter)
+## Headers (Range Mode)
 
-```yaml
----
-excel_file: _external/Budget.xlsx   # vault-relative path or alias
-excel_sheet: January                # sheet tab name
----
-```
+The `headers` key controls whether the first row of a range renders as `<th>` cells:
 
-Any `=excel(...)` or `=exceltable(...)` call that omits the file and/or sheet
-arguments inherits these values.
-
----
-
-## Aliases
-
-Aliases map a short name to a vault-relative path.  They are currently
-hard-coded in `main.ts` inside `aliasToPath`:
-
-```typescript
-private aliasToPath: Record<string, string> = {
-  "Expenses Actual": "_external/Expenses Actual.xlsx",
-};
-```
-
-Use an alias in calls: `=excel("Expenses Actual", 5, 3)`.
-
-To add a new alias, update the map and rebuild (see *Building* below).
+| Value | Behaviour |
+|-------|-----------|
+| `true` / `yes` | Always use the first row as header cells. |
+| `false` / `no` | Never use header cells. |
+| `auto` *(default)* | Auto-detect: uses headers when every cell in the first row has a string type. |
 
 ---
 
 ## Styling
 
-The plugin emits these CSS classes you can target with an Obsidian CSS snippet:
+The plugin emits these CSS classes which can be targeted with an Obsidian CSS snippet (`.obsidian/snippets/xlsx-cells.css`):
 
 | Class | Element | Description |
 |-------|---------|-------------|
-| `.excel-cell` | `<span>` | Single-cell inline value |
+| `.excel-cell` | `<span>` | Block-mode single-cell value |
+| `.excel-inline-cell` | `<span>` | Inline single-cell value |
 | `.excel-range` | `<table>` | Range table |
 | `.excel-table-wrapper` | `<div>` | Block wrapper around the table |
+| `.excel-loading` | `<div>` | Loading placeholder shown before data arrives |
+| `.excel-error` | `<div>` / `<span>` | Error badge |
+| `.excel-cell-num` | `<td>` / `<th>` | Number cell (right-aligned by default) |
+| `.excel-cell-str` | `<td>` / `<th>` | String / empty cell (left-aligned by default) |
+| `.excel-cell-bool` | `<td>` / `<th>` | Boolean cell (centred by default) |
 
-Example snippet (`/.obsidian/snippets/xlsx-cells.css`):
+Example snippet:
 
 ```css
-.excel-cell {
+.excel-cell,
+.excel-inline-cell {
   font-variant-numeric: tabular-nums;
   color: var(--text-accent);
 }
@@ -202,6 +252,10 @@ Example snippet (`/.obsidian/snippets/xlsx-cells.css`):
   background: var(--background-secondary);
   font-weight: 600;
 }
+
+.excel-cell-num { text-align: right; }
+.excel-cell-str { text-align: left; }
+.excel-cell-bool { text-align: center; }
 ```
 
 ---
@@ -209,44 +263,41 @@ Example snippet (`/.obsidian/snippets/xlsx-cells.css`):
 ## Building
 
 ```bash
-cd .obsidian/plugins/xlsx-cells
-node build.js
+npm install        # install dependencies
+npm run build      # one-time production build → main.js
+npm run dev        # watch mode (incremental builds with inline source maps)
 ```
 
-Requires Node.js. Dependencies (`xlsx`, `esbuild`, TypeScript types) are
-installed with `npm install`.
+Requires Node.js. The build uses [esbuild](https://esbuild.github.io/) and bundles `src/main.ts` into `main.js` (CommonJS, ES2020 target).
 
 ---
 
-## Adding New Features
+## Architecture
 
-The plugin is intentionally small — everything lives in `main.ts`.
+The plugin is split into five source files under `src/`:
+
+| File | Responsibility |
+|------|---------------|
+| `src/main.ts` | Plugin entry point. Registers the `excel` code-block processor, the `xl:` inline post-processor, the file-change watcher, and settings. |
+| `src/parser.ts` | Pure TypeScript parser for fenced block content and inline `xl:` references. No external dependencies. |
+| `src/renderer.ts` | DOM rendering — cells, tables, spinners, and error badges. |
+| `src/settings.ts` | Obsidian settings interface, defaults, and settings tab UI. |
+| `src/workbook.ts` | `SafeWorkbookManager` — workbook caching, in-flight request deduplication, stale-cache fallback, and debounced reload. |
+
+---
+
+## Extending the Plugin
 
 ### Adding a new format specifier
 
-1. Add the character to the specifier character class in `applyFormat`'s regex:
+1. Add the character to the specifier class in `applyFormat`'s regex in `src/renderer.ts`:
    ```typescript
    const m = fmt.match(/^%([+,]*)(?:\.(\d+))?([fegdis?]?)$/i);
    //                                                    ^ add new letter here
    ```
-2. Add a `else if (spec === "?")` branch in `applyFormat` that produces a string.
+2. Add a corresponding `else if (spec === "?")` branch that returns a string.
 3. Document it in this README.
-
-### Adding a new call type
-
-1. Define a new regex constant in `onload()` (model it on `reCell` or `reTable`).
-   - Use `([A-Za-z]+|\d+)` for any position arg that should accept letter or integer refs.
-   - Use `(["'][^"']*["']|[h%][^\s)]*)` for an optional unquoted-or-quoted format arg.
-2. Collect its matches into `allMatches` with a new `type` tag.
-3. Handle the new type in the `for (const { type, m } of allMatches)` loop.
-   - Use `parseRef(m[N])` (not `Number(m[N])`) for any position arg so letter refs work.
-4. Add a corresponding private method (model it on `readCellValue` /
-   `readRangeAsTable`) that returns a DOM node.
-5. Document the call syntax in this README.
 
 ### Adding plugin settings
 
-Obsidian's `Plugin.loadData()` / `saveData()` API stores JSON in
-`.obsidian/plugins/xlsx-cells/data.json`.  Move `fallbackFile`,
-`fallbackSheet`, and `aliasToPath` into a settings object loaded in `onload()`
-to make them user-configurable without a rebuild.
+New user-configurable values should be added to `XlsxCellsSettings` in `src/settings.ts`, given a default in `DEFAULT_SETTINGS`, and exposed via a new `Setting` in `XlsxCellsSettingTab.display()`.
