@@ -1,0 +1,10 @@
+{
+  "id": "xlsx-cells-v2",
+  "name": "XLSX Cells v2",
+  "version": "2.0.0",
+  "minAppVersion": "1.5.7",
+  "description": "Render Excel cell values and ranges via fenced code blocks or inline backtick spans.",
+  "author": "You",
+  "authorUrl": "",
+  "isDesktopOnly": true
+}

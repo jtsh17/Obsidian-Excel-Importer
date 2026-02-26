@@ -1,0 +1,93 @@
+/* ── Loading state ─────────────────────────────────────────────────── */
+.excel-loading {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 0;
+  opacity: 0.6;
+  font-size: 0.9em;
+  color: var(--text-muted);
+}
+
+/* ── Error text ─────────────────────────────────────────────────────── */
+.excel-error {
+  color: var(--text-error);
+  font-size: 0.85em;
+  font-style: italic;
+}
+
+.excel-error-icon {
+  margin-right: 3px;
+}
+
+/* ── Single cell value (block syntax) ──────────────────────────────── */
+.excel-cell {
+  display: block;
+  width: fit-content;
+  font-variant-numeric: tabular-nums;
+  font-family: var(--font-monospace);
+  color: var(--text-normal);
+}
+
+/* ── Single cell value (inline syntax) ─────────────────────────────── */
+.excel-inline-cell {
+  font-variant-numeric: tabular-nums;
+  font-family: var(--font-monospace);
+}
+
+/* ── Table wrapper ──────────────────────────────────────────────────── */
+.excel-table-wrapper {
+  overflow-x: auto;
+  margin: 0.75em 0;
+}
+
+/* ── Table ──────────────────────────────────────────────────────────── */
+.excel-range {
+  border-collapse: collapse;
+  font-size: 0.9em;
+  font-variant-numeric: tabular-nums;
+  min-width: max-content;
+}
+
+.excel-range td,
+.excel-range th {
+  border: 1px solid var(--background-modifier-border);
+  padding: 4px 10px;
+  white-space: nowrap;
+}
+
+/* Auto-alignment by detected cell type */
+.excel-range .excel-cell-num {
+  text-align: right;
+}
+
+.excel-range .excel-cell-str {
+  text-align: left;
+}
+
+.excel-range .excel-cell-bool {
+  text-align: center;
+}
+
+/* Header row */
+.excel-range th {
+  background-color: var(--background-secondary);
+  font-weight: 600;
+  color: var(--text-normal);
+}
+
+/* First column is typically a row label — always left-align regardless of type */
+.excel-range td:first-child,
+.excel-range th:first-child {
+  text-align: left;
+}
+
+/* Zebra striping */
+.excel-range tr:nth-child(even) td {
+  background-color: var(--background-primary-alt);
+}
+
+/* Hover highlight */
+.excel-range tr:hover td {
+  background-color: var(--background-modifier-hover);
+}
