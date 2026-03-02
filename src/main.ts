@@ -42,6 +42,14 @@ export default class XlsxCellsPlugin extends Plugin {
     this.registerMarkdownCodeBlockProcessor(
       "excel",
       async (source, el, ctx) => {
+        // Per-note disable: render source as plain code, no processing or errors
+        if (this.isNoteDisabled(ctx.sourcePath)) {
+          const pre  = el.createEl("pre");
+          const code = pre.createEl("code");
+          code.textContent = source;
+          return;
+        }
+
         // Register with Obsidian's component tree for proper lifecycle management
         ctx.addChild(new MarkdownRenderChild(el));
 
@@ -99,6 +107,9 @@ export default class XlsxCellsPlugin extends Plugin {
     // Scans for <code> elements whose text starts with "xl:" and replaces them
     // with rendered values or tables.
     this.registerMarkdownPostProcessor((el, ctx) => {
+      // Per-note disable: leave all xl: spans completely untouched
+      if (this.isNoteDisabled(ctx.sourcePath)) return;
+
       const codeEls = el.querySelectorAll("code");
 
       codeEls.forEach((code) => {
@@ -211,6 +222,22 @@ export default class XlsxCellsPlugin extends Plugin {
       file:  (fm.excel_file  as string | undefined)?.trim() || undefined,
       sheet: (fm.excel_sheet as string | undefined)?.trim() || undefined,
     };
+  }
+
+  /**
+   * Returns true when the note at sourcePath has `excel_enabled: false` in its
+   * frontmatter, disabling all plugin processing for that note.
+   * Only an explicit boolean false triggers this; missing, null, true, and
+   * string values all leave the plugin active.
+   */
+  private isNoteDisabled(sourcePath: string): boolean {
+    const file = this.app.vault.getFileByPath(sourcePath);
+    if (!file) return false;
+
+    const fm = this.app.metadataCache.getFileCache(file)?.frontmatter;
+    if (!fm) return false;
+
+    return fm.excel_enabled === false;
   }
 
   // ── Dependency tracking ────────────────────────────────────────────────────
