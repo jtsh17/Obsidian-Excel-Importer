@@ -227,8 +227,8 @@ export default class XlsxCellsPlugin extends Plugin {
   /**
    * Returns true when the note at sourcePath has `excel_enabled: false` in its
    * frontmatter, disabling all plugin processing for that note.
-   * Only an explicit boolean false triggers this; missing, null, true, and
-   * string values all leave the plugin active.
+   * Accepts both boolean false and the string "false" (Obsidian stores text
+   * properties as strings even when the value looks like a boolean).
    */
   private isNoteDisabled(sourcePath: string): boolean {
     const file = this.app.vault.getFileByPath(sourcePath);
@@ -237,7 +237,8 @@ export default class XlsxCellsPlugin extends Plugin {
     const fm = this.app.metadataCache.getFileCache(file)?.frontmatter;
     if (!fm) return false;
 
-    return fm.excel_enabled === false;
+    const val = fm.excel_enabled;
+    return val === false || val === "false";
   }
 
   // ── Dependency tracking ────────────────────────────────────────────────────
