@@ -13,6 +13,7 @@ Renders live Excel cell values and ranges directly inside Obsidian notes via fen
 ---
 excel_file: _external/MyData.xlsx
 excel_sheet: Sheet1
+excel_enabled: false   # set to false to disable all plugin processing for this note
 ---
 ```
 
@@ -110,6 +111,26 @@ All parts are separated by colons. The parser reads from right to left:
 
 ---
 
+## Disabling the Plugin Per Note
+
+Add `excel_enabled: false` to a note's frontmatter to turn off all plugin processing for that note:
+
+```yaml
+---
+excel_enabled: false
+---
+```
+
+When disabled:
+- Fenced ` ```excel ``` ` blocks render as plain `<pre><code>` text (Obsidian's built-in code block styling), so the source is still readable.
+- Inline `` `xl:...` `` spans are left completely untouched.
+
+This is useful for README notes or documentation notes that contain example blocks you don't want the plugin to evaluate.
+
+Only an explicit boolean `false` disables the plugin; omitting the key, setting it to `true`, or any other value leaves the plugin active.
+
+---
+
 ## Defaults Cascade
 
 File and sheet are resolved through a three-level cascade:
@@ -119,7 +140,7 @@ block / inline key  →  note frontmatter  →  plugin settings
 ```
 
 1. **Block/inline key** — `file:` / `sheet:` specified directly in the code block or `xl:` reference.
-2. **Note frontmatter** — `excel_file` and `excel_sheet` YAML keys at the top of the note.
+2. **Note frontmatter** — `excel_file`, `excel_sheet`, and `excel_enabled` YAML keys at the top of the note.
 3. **Plugin settings** — *Default file* and *Default sheet* configured in Obsidian's Settings UI.
 
 ---

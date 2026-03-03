@@ -1,0 +1,9 @@
+# Dependencies
+node_modules/
+
+# TypeScript build cache
+*.tsbuildinfo
+
+# OS files
+.DS_Store
+Thumbs.db
